@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>宝可梦属性克制计算器（组合版）</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  .type { display: inline-block; margin: 5px; }
+  .result { margin-top: 20px; }
+  .strong { color: red; font-weight: bold; }
+  .weak { color: blue; font-weight: bold; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #aaa; padding: 5px 10px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>宝可梦属性克制计算器</h1>
+<p>选择攻击属性：</p>
+
+<div id="attack-types"></div>
+
+<button onclick="calculate()">计算克制关系</button>
+
+<div class="result" id="result"></div>
+
+<script>
+const types = [
+  'Normal', 'Fire', 'Water', 'Electric', 'Grass', 'Ice',
+  'Fighting', 'Poison', 'Ground', 'Flying', 'Psychic', 'Bug',
+  'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy'
+];
+
+const typeChart = {
+  Normal:  { Rock: 0.5, Ghost: 0, Steel: 0.5 },
+  Fire:    { Fire: 0.5, Water: 0.5, Grass: 2, Ice: 2, Bug: 2, Rock: 0.5, Dragon: 0.5, Steel: 2 },
+  Water:   { Fire: 2, Water: 0.5, Grass: 0.5, Ground: 2, Rock: 2, Dragon: 0.5 },
+  Electric:{ Water: 2, Electric: 0.5, Grass: 0.5, Ground: 0, Flying: 2, Dragon: 0.5 },
+  Grass:   { Fire: 0.5, Water: 2, Grass: 0.5, Poison: 0.5, Ground: 2, Flying: 0.5, Bug: 0.5, Rock: 2, Dragon: 0.5, Steel: 0.5 },
+  Ice:     { Fire: 0.5, Water: 0.5, Grass: 2, Ice: 0.5, Ground: 2, Flying: 2, Dragon: 2, Steel: 0.5 },
+  Fighting:{ Normal: 2, Ice: 2, Rock: 2, Dark: 2, Steel: 2, Poison: 0.5, Flying: 0.5, Psychic: 0.5, Bug: 0.5, Ghost: 0, Fairy: 0.5 },
+  Poison:  { Grass: 2, Poison: 0.5, Ground: 0.5, Rock: 0.5, Ghost: 0.5, Steel: 0, Fairy: 2 },
+  Ground:  { Fire: 2, Electric: 2, Grass: 0.5, Poison: 2, Flying: 0, Bug: 0.5, Rock: 2, Steel: 2 },
+  Flying:  { Electric: 0.5, Grass: 2, Fighting: 2, Bug: 2, Rock: 0.5, Steel: 0.5 },
+  Psychic: { Fighting: 2, Poison: 2, Psychic: 0.5, Dark: 0, Steel: 0.5 },
+  Bug:     { Fire: 0.5, Grass: 2, Fighting: 0.5, Poison: 0.5, Flying: 0.5, Psychic: 2, Ghost: 0.5, Dark: 2, Steel: 0.5, Fairy: 0.5 },
+  Rock:    { Fire: 2, Ice: 2, Fighting: 0.5, Ground: 0.5, Flying: 2, Bug: 2, Steel: 0.5 },
+  Ghost:   { Normal: 0, Psychic: 2, Ghost: 2, Dark: 0.5 },
+  Dragon:  { Dragon: 2, Steel: 0.5, Fairy: 0 },
+  Dark:    { Fighting: 0.5, Psychic: 2, Ghost: 2, Dark: 0.5, Fairy: 0.5 },
+  Steel:   { Fire: 0.5, Water: 0.5, Electric: 0.5, Ice: 2, Rock: 2, Fairy: 2, Steel: 0.5 },
+  Fairy:   { Fire: 0.5, Fighting: 2, Poison: 0.5, Dragon: 2, Dark: 2, Steel: 0.5 }
+};
+
+const attackDiv = document.getElementById('attack-types');
+types.forEach(type => {
+  const label = document.createElement('label');
+  label.className = 'type';
+  label.innerHTML = `<input type="checkbox" value="${type}"> ${type}`;
+  attackDiv.appendChild(label);
+});
+
+function calculate() {
+  const selectedAttacks = Array.from(document.querySelectorAll('#attack-types input:checked')).map(cb => cb.value);
+  if (selectedAttacks.length === 0) {
+    alert('请至少选择一个攻击属性');
+    return;
+  }
+
+  let results = [];
+  let normalEffectCount = {};
+  let weakEffectCount = {};
+  let strongEffectCount = {};
+  let normalCount = 0;
+  let weakCount = 0;
+  let strongCount = 0;
+
+  for (let i = 0; i < types.length; i++) {
+    for (let j = i; j < types.length; j++) {
+      const def1 = types[i];
+      const def2 = types[j];
+      let maxMultiplier = 0;
+      let bestAttack = '';
+
+      selectedAttacks.forEach(att => {
+        let m1 = typeChart[att]?.[def1] ?? 1;
+        let m2 = typeChart[att]?.[def2] ?? 1;
+        let totalMultiplier = (i === j) ? m1 : m1 * m2;
+        if (totalMultiplier > maxMultiplier) {
+          maxMultiplier = totalMultiplier;
+          bestAttack = att;
+        }
+      });
+
+      results.push({
+        defense: def1 + (def1 === def2 ? '' : ' / ' + def2),
+        multiplier: maxMultiplier,
+        bestAttack: bestAttack
+      });
+
+      if (Math.abs(maxMultiplier - 1) < 0.001) {
+        normalCount++;
+        normalEffectCount[def1] = (normalEffectCount[def1] || 0) + 1;
+        if (def1 !== def2) {
+          normalEffectCount[def2] = (normalEffectCount[def2] || 0) + 1;
+        }
+      } else if (maxMultiplier < 1) {
+        weakCount++;
+        weakEffectCount[def1] = (weakEffectCount[def1] || 0) + 1;
+        if (def1 !== def2) {
+          weakEffectCount[def2] = (weakEffectCount[def2] || 0) + 1;
+        }
+      } else if (maxMultiplier > 1) {
+        strongCount++;
+        strongEffectCount[def1] = (strongEffectCount[def1] || 0) + 1;
+        if (def1 !== def2) {
+          strongEffectCount[def2] = (strongEffectCount[def2] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  results.sort((a, b) => a.multiplier - b.multiplier);
+
+  let output = '<h2>计算结果（攻击选项：' + selectedAttacks.join(', ') + '）</h2>';
+
+  output += '<h2>效果分类总结：</h2>';
+  output += '<table border="1" cellpadding="5">';
+  output += '<tr><th>效果分类</th><th>组合数量</th></tr>';
+  output += `<tr><td>效果不好（倍率 < 1.00x）</td><td>${weakCount}</td></tr>`;
+  output += `<tr><td>普通效果（1.00x）</td><td>${normalCount}</td></tr>`;
+  output += `<tr><td>效果绝佳（倍率 > 1.00x）</td><td>${strongCount}</td></tr>`;
+  output += '</table>';
+
+  output += '<table border="1" cellpadding="5"><tr><th>防御组合</th><th>最佳倍率</th><th>使用的攻击属性</th></tr>';
+  results.forEach(r => {
+    let multClass = r.multiplier > 1 ? 'strong' : (r.multiplier < 1 ? 'weak' : '');
+    output += `<tr><td>${r.defense}</td><td class="${multClass}">${r.multiplier.toFixed(2)}x</td><td>${r.bestAttack}</td></tr>`;
+  });
+  output += '</table>';
+
+  function generateStatTable(title, countObj) {
+    let section = `<h3>${title}</h3>`;
+    if (Object.keys(countObj).length === 0) {
+      section += '<p>没有符合条件的属性。</p>';
+    } else {
+      const sorted = Object.entries(countObj).sort((a, b) => b[1] - a[1]);
+      section += '<table border="1" cellpadding="5"><tr><th>属性</th><th>出现次数</th></tr>';
+      sorted.forEach(([type, count]) => {
+        section += `<tr><td>${type}</td><td>${count}</td></tr>`;
+      });
+      section += '</table>';
+    }
+    return section;
+  }
+
+  output += '<h2>效果分类统计（各属性出现次数）：</h2>';
+  output += generateStatTable('普通效果（1.00x）出现次数统计', normalEffectCount);
+  output += generateStatTable('效果不好（倍率 < 1.00x）出现次数统计', weakEffectCount);
+  output += generateStatTable('效果绝佳（倍率 > 1.00x）出现次数统计', strongEffectCount);
+
+  document.getElementById('result').innerHTML = output;
+}
+</script>
+
+</body>
+</html>

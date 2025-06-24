@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wave Simulator</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #001f3f; /* dark ocean */
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="waveCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("waveCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+
+    window.addEventListener("resize", () => {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    });
+
+    class Wave {
+      constructor(offset) {
+        this.amplitude = 20 + Math.random() * 30;
+        this.frequency = 0.005 + Math.random() * 0.005;
+        this.speed = 0.5 + Math.random();
+        this.phase = Math.random() * 1000;
+        this.yOffset = offset;
+        this.color = `rgba(0, 100, 255, 0.3)`;
+      }
+
+      draw(t) {
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x++) {
+          const y = Math.sin(x * this.frequency + t * this.speed + this.phase) * this.amplitude;
+          ctx.lineTo(x, h - this.yOffset + y);
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+
+    const waves = [];
+    for (let i = 0; i < 10; i++) {
+      waves.push(new Wave(i * 20));
+    }
+
+    function animate(t) {
+      ctx.clearRect(0, 0, w, h);
+      for (const wave of waves) {
+        wave.draw(t / 1000);
+      }
+      requestAnimationFrame(animate);
+    }
+
+    animate(0);
+  </script>
+</body>
+</html>
