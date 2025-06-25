@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flappy Bird Mini</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: skyblue; overflow: hidden; font-family: sans-serif; }
+    #game {
+      width: 400px;
+      height: 600px;
+      margin: 20px auto;
+      background: linear-gradient(to bottom, #87CEEB, #fff);
+      position: relative;
+      overflow: hidden;
+      border: 3px solid #333;
+    }
+    #bird {
+      width: 30px;
+      height: 30px;
+      background: yellow;
+      border-radius: 50%;
+      position: absolute;
+      top: 200px;
+      left: 80px;
+    }
+    .pipe {
+      position: absolute;
+      width: 50px;
+      background: green;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game">
+  <div id="bird"></div>
+</div>
+
+<script>
+  const game = document.getElementById("game");
+  const bird = document.getElementById("bird");
+  let birdY = 200;
+  let velocity = 0;
+  let gravity = 0.5;
+  let isGameOver = false;
+  let score = 0;
+
+  document.addEventListener("keydown", () => {
+    if (!isGameOver) velocity = -8;
+  });
+
+  function createPipe() {
+    const gap = 150;
+    const topHeight = Math.floor(Math.random() * 250) + 50;
+    const bottomHeight = 600 - topHeight - gap;
+
+    const topPipe = document.createElement("div");
+    topPipe.className = "pipe";
+    topPipe.style.height = topHeight + "px";
+    topPipe.style.top = "0px";
+    topPipe.style.left = "400px";
+
+    const bottomPipe = document.createElement("div");
+    bottomPipe.className = "pipe";
+    bottomPipe.style.height = bottomHeight + "px";
+    bottomPipe.style.bottom = "0px";
+    bottomPipe.style.left = "400px";
+
+    game.appendChild(topPipe);
+    game.appendChild(bottomPipe);
+
+    let pipeX = 400;
+    const moveInterval = setInterval(() => {
+      if (isGameOver) {
+        clearInterval(moveInterval);
+        return;
+      }
+
+      pipeX -= 2;
+      topPipe.style.left = pipeX + "px";
+      bottomPipe.style.left = pipeX + "px";
+
+      if (pipeX < -60) {
+        clearInterval(moveInterval);
+        game.removeChild(topPipe);
+        game.removeChild(bottomPipe);
+        score++;
+      }
+
+      // Collision
+      const birdTop = birdY;
+      const birdBottom = birdY + 30;
+      if (
+        pipeX < 110 && pipeX > 50 &&
+        (birdTop < topHeight || birdBottom > topHeight + gap)
+      ) {
+        gameOver();
+      }
+    }, 16);
+  }
+
+  function gameOver() {
+    isGameOver = true;
+    alert("Game Over! Score: " + score);
+    location.reload();
+  }
+
+  setInterval(() => {
+    if (!isGameOver) createPipe();
+  }, 1500);
+
+  function gameLoop() {
+    velocity += gravity;
+    birdY += velocity;
+
+    if (birdY < 0 || birdY > 570) {
+      gameOver();
+    }
+
+    bird.style.top = birdY + "px";
+
+    if (!isGameOver) requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
+</script>
+
+</body>
+</html>
