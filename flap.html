@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Flappy Bird Mini</title>
+  <title>Flappy Bird Mini - Smooth Physics</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: skyblue; overflow: hidden; font-family: sans-serif; }
@@ -29,26 +29,60 @@
       width: 50px;
       background: green;
     }
+    #start-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
 
 <div id="game">
   <div id="bird"></div>
+  <div id="start-message">Press any key to start</div>
 </div>
 
 <script>
   const game = document.getElementById("game");
   const bird = document.getElementById("bird");
+  const startMessage = document.getElementById("start-message");
+
   let birdY = 200;
   let velocity = 0;
-  let gravity = 0.5;
+  const gravity = 0.25;       
+  const flapStrength = -4.5;    
+  const maxVelocity = 4;      
   let isGameOver = false;
+  let gameStarted = false;
   let score = 0;
 
   document.addEventListener("keydown", () => {
-    if (!isGameOver) velocity = -8;
+    if (!gameStarted) {
+      startGame();
+    }
+    if (!isGameOver) {
+      velocity = flapStrength;
+    }
   });
+
+  function startGame() {
+    gameStarted = true;
+    startMessage.style.display = "none";
+    gameLoop();
+    setTimeout(() => {
+      if (!isGameOver) createPipe();
+      setInterval(() => {
+        if (!isGameOver) createPipe();
+      }, 1500);
+    }, 1000);
+  }
 
   function createPipe() {
     const gap = 150;
@@ -71,6 +105,7 @@
     game.appendChild(bottomPipe);
 
     let pipeX = 400;
+
     const moveInterval = setInterval(() => {
       if (isGameOver) {
         clearInterval(moveInterval);
@@ -81,21 +116,20 @@
       topPipe.style.left = pipeX + "px";
       bottomPipe.style.left = pipeX + "px";
 
+      const birdTop = birdY;
+      const birdBottom = birdY + 30;
+      if (
+        pipeX < 110 && pipeX + 50 > 80 &&
+        (birdTop < topHeight || birdBottom > topHeight + gap)
+      ) {
+        gameOver();
+      }
+
       if (pipeX < -60) {
         clearInterval(moveInterval);
         game.removeChild(topPipe);
         game.removeChild(bottomPipe);
         score++;
-      }
-
-      // Collision
-      const birdTop = birdY;
-      const birdBottom = birdY + 30;
-      if (
-        pipeX < 110 && pipeX > 50 &&
-        (birdTop < topHeight || birdBottom > topHeight + gap)
-      ) {
-        gameOver();
       }
     }, 16);
   }
@@ -106,24 +140,23 @@
     location.reload();
   }
 
-  setInterval(() => {
-    if (!isGameOver) createPipe();
-  }, 1500);
-
   function gameLoop() {
+    if (!gameStarted || isGameOver) return;
+
     velocity += gravity;
+    if (velocity > maxVelocity) velocity = maxVelocity;
+
     birdY += velocity;
 
-    if (birdY < 0 || birdY > 570) {
-      gameOver();
-    }
+    if (birdY < 0) birdY = 0;
+    if (birdY > 570) gameOver();
 
     bird.style.top = birdY + "px";
 
-    if (!isGameOver) requestAnimationFrame(gameLoop);
+    requestAnimationFrame(gameLoop);
   }
 
-  gameLoop();
+  bird.style.top = birdY + "px";
 </script>
 
 </body>
